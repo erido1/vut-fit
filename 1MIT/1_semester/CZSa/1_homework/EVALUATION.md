@@ -47,4 +47,4 @@ The bullets below Eq. 8 are slightly incorrect, e.g., the first term does not co
 ---
 
 **Total Score:**  
-`1 + 0.75 + 0.75 + 1 + 0.75 + 1.5 = 5.75p`
+`1 + 0.75 + 0.75 + 1 + 0.75 + 1.5 = 5.75p` 

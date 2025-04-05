@@ -8,7 +8,7 @@
 - Test - vlastni: 1.0 / 1
 - Bonus: 0
 
-**Celkove: 8.0 / 8**
+**Celkove: 8.0 / 8** 
 
 Komentar:  
 OK řešení.
