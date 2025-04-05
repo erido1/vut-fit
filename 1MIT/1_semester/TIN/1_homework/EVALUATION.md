@@ -1,0 +1,3 @@
+1: pozor, neplette si reg. jazyky a reg. vyrazy; ok
+
+2: a) je potreba popsat podrobneji, tady neni jasne, jak presne by konstrukce vypadala; ...
