@@ -1,0 +1,48 @@
+#### Stručně ale věcně odpovězte na následující otázky: ######
+
+1. Jaká byla dosažena výkonnost v Intel Advisoru pro implementace ref, line a batch
+(v GFLOPS)? (0.5b)
+==============================================================================
+ref: 0.774 GFLOPS
+line: 31.803 GFLOPS
+batch: 34.576 GFLOPS
+
+
+2. Porovnejte implementaci referenčního rešení oproti "Line" a "Batch" implementaci. 
+Jakým způsobem jsou načítána data, proč, a jaký to má vliv na výkon. (1b)
+==============================================================================
+ref: Data jsou načítána po jednotlivých pixelech matice, přičemž v každé iteraci se zvlášť počítají hodnoty pro každý bod (i, j). Tato sekvenční metoda načítání, při které procesor načítá paměť po jednotlivých prvcích matice a opakovaně počítá souřadnice (x, y) pro každý pixel, způsobuje špatnou lokalitu dat a vyšší latenci při práci s pamětí. I když je tento přístup jednodušší, vede k neefektivnímu využití paměti a nadbytečným výpočtům, což má za následek nižší výkonnost.
+
+line: Data jsou načítána po řádcích a použití SIMD s direktivou #pragma omp simd umožňuje paralelní zpracování těchto hodnot, což zvyšuje efektivitu tím, že více hodnot je zpracováno současně. To může výrazně zlepšit výkon při využívání více procesorových jader.
+
+batch: Data jsou načítána po blocích o velikosti block_size, což zlepšuje paměťovou lokalitu a efektivitu cache, protože bloky zůstávají v cache během svého zpracování, čímž se eliminuje potřeba cache blocking. Tento přístup optimalizuje výkon tím, že zlepšuje lokalitu dat a snižuje počet přístupů k hlavní paměti. Díky SIMD paralelizaci jsou celé bloky zpracovávány současně, tím výrazně zvyšuje efektivitu a omezuje přenosy mezi různými paměťovými oblastmi.
+
+
+3. Porovnejte Roofline všech modelů. Jsou implementace memory 
+bound? Jaká je vaše aritmetická intenzita? Dokázali byste ji přibližně spočítat 
+i ručně a jak? (1b)
+==============================================================================
+ref: 0.167 FLOP/Byte 
+Tato implementace vykazuje nejnižší aritmetickou intenzitu (0.167 FLOP/Byte), jelikož je každý pixel zpracováván samostatně, což způsobuje časté přístupy do paměti. Navíc je umístěna pod úrovní L3 cache, což dále zvyšuje nároky na paměť. I když je výpočetní zátěž nižší, metoda je neefektivní z hlediska paměťového přístupu.
+
+line: 0.413 FLOP/Byte
+batch: 0.412 FLOP/Byte
+Batch a Line mají shodnou aritmetickou intenzitu (0.412 FLOP/Byte a 0.413 FLOP/Byte). Obě implementace se nacházejí mezi L2 a L3 cache, ale rozdíl mezi nimi se projeví až při skutečném vykonávání. Tento rozdíl je způsoben zejména způsobem přístupu k paměti a organizací dat (viz 2. otázka), avšak důvodů může být více.
+
+Line i batch jsou memory bound (hláška z Intel Advisoru: This loop is mostly memory bound. The performance of the loop is bounded by the private cache bandwidth. The bandwidth of the shared cache and DRAM may degrade perfomance.)
+
+Aritmetickou intenzitu lze spočítat pomocí vzorce, který vyjadřuje poměr mezi počtem aritmetických operací (FLOP) a množstvím přenesených dat (v bytech). Tento vzorec vypadá takto: počet_aritmetických_operací / počet_přístupů_do_paměti. Ačkoli je výpočet teoreticky možný, ve skutečnosti je složitý a nepřesný, protože skutečný výkon závisí na dalších faktorech, jako je efektivita využití paměti (cache locality), paralelizace nebo způsob přístupu k paměti, které je těžké zahrnout do jednoduchého výpočtu.
+
+
+4. Komentujte vliv velikosti cache na výkonnost a chování na větších 
+velikostech domény. (1b)
+==============================================================================
+Výkon je výrazně ovlivněn velikostí cache, zejména u větších domén, kde není možné uložit všechna data do cache. Menší domény se obvykle do cache vejdou, což umožňuje rychlý přístup k datům. U větších domén však dochází k častějším cache misses, což zpomaluje výpočty, protože procesor musí častěji přistupovat k pomalejší RAM. Implementace jako batch, které zpracovávají data po blocích, efektivněji využívají cache a zlepšují výkon u větších domén. Naproti tomu referenční implementace, která počítá každý bod nezávisle, trpí častějšími přístupy do paměti a nižší efektivitou.
+
+
+5. Jaký vliv na výkonnost má symetrie? Lze tento rozdíl pozorovat v Intel Advisor? 
+(nápověda: instrukce) (0.5b)
+============================================================================== 
+Symetrie v kódu, jako jsou opakované výpočty pro každý prvek matice nebo každý pixel v Mandelbrotově množině, může významně zvýšit výkon díky efektivnímu využití SIMD instrukcí. Tyto instrukce umožňují současné zpracování více dat, čímž dochází k urychlení výpočtů. Vzhledem k tomu, že kód má opakující se strukturu, lze ho lépe vektorizovat, a tím se zlepšuje efektivita procesoru a zkracuje doba potřebná pro výpočty. 
+
+V Intel Advisor (sekce Code Analysis) lze pozorovat, že referenční implementace vykonala celkem 17 556 204 720 instrukcí (Number of Compute Instructions), zatímco u verze line bylo těchto instrukcí 3 899 888 640. Zajímavé je, že batch provedla pouze 1 322 387 208 instrukcí, což je téměř 17krát méně než u referenční implementace.
