@@ -1,0 +1,1 @@
+Výstupní TSV neobsahuje sloupec s URL, jak bylo požadováno. Odevzdaný data.tsv obsahuje občas vložený řádek s URL, který rozbíjí formát souboru.
