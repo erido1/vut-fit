@@ -1,0 +1,18 @@
+[gd_scene load_steps=6 format=3 uid="uid://bnf7rivwbaoyh"]
+
+[ext_resource type="Texture2D" uid="uid://bw5jglpj4lldw" path="res://vikram/vikram_4k.png" id="1_r2k3p"]
+[ext_resource type="Texture2D" uid="uid://bu3tque21nfpe" path="res://vikram/vikram_4k_metallic.png" id="2_7nxyn"]
+[ext_resource type="Texture2D" uid="uid://dla8nkdq846ml" path="res://vikram/vikram_4k_roughness.png" id="3_o04c0"]
+[ext_resource type="ArrayMesh" uid="uid://dsdr4bbmvegf" path="res://vikram/vikram.obj" id="4_p3fa4"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_j6jnq"]
+albedo_texture = ExtResource("1_r2k3p")
+metallic = 1.0
+metallic_texture = ExtResource("2_7nxyn")
+roughness_texture = ExtResource("3_o04c0")
+
+[node name="Vikram" type="MeshInstance3D"]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_j6jnq")
+mesh = ExtResource("4_p3fa4")
+skeleton = NodePath("../../..")

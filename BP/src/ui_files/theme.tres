@@ -1,0 +1,52 @@
+[gd_resource type="Theme" load_steps=13 format=3 uid="uid://c3ao3u6ynaea6"]
+
+[ext_resource type="Texture2D" uid="uid://cib16qaa0xwd1" path="res://ui_files/slider.png" id="1_5f5oq"]
+[ext_resource type="Texture2D" uid="uid://dhx4oefo3h1r8" path="res://ui_files/slider_highlight.png" id="2_uf531"]
+
+[sub_resource type="StyleBoxLine" id="StyleBoxLine_lqm0w"]
+color = Color(1, 0, 0, 1)
+thickness = 20
+
+[sub_resource type="StyleBoxLine" id="StyleBoxLine_nsx2s"]
+color = Color(1, 0, 0, 1)
+thickness = 20
+
+[sub_resource type="StyleBoxLine" id="StyleBoxLine_1tqvh"]
+color = Color(0.580228, 0.580228, 0.580226, 1)
+thickness = 20
+
+[sub_resource type="ImageTexture" id="ImageTexture_tnsx2"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_qje05"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1af71"]
+bg_color = Color(0.6, 0.6, 0.6, 0.392157)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_iuv2g"]
+bg_color = Color(0.6, 0.6, 0.6, 0)
+
+[sub_resource type="ImageTexture" id="ImageTexture_m12ei"]
+
+[sub_resource type="ImageTexture" id="ImageTexture_4si4a"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_odcj4"]
+
+[resource]
+default_base_scale = 1.0
+default_font_size = 50
+HSlider/icons/grabber = ExtResource("1_5f5oq")
+HSlider/icons/grabber_highlight = ExtResource("2_uf531")
+HSlider/styles/grabber_area = SubResource("StyleBoxLine_lqm0w")
+HSlider/styles/grabber_area_highlight = SubResource("StyleBoxLine_nsx2s")
+HSlider/styles/slider = SubResource("StyleBoxLine_1tqvh")
+OptionButton/constants/h_separation = 0
+OptionButton/constants/modulate_arrow = 50
+OptionButton/font_sizes/font_size = 50
+OptionButton/icons/arrow = SubResource("ImageTexture_tnsx2")
+OptionButton/styles/focus = SubResource("StyleBoxEmpty_qje05")
+OptionButton/styles/hover = SubResource("StyleBoxFlat_1af71")
+OptionButton/styles/normal = SubResource("StyleBoxFlat_iuv2g")
+PopupMenu/constants/item_start_padding = 5
+PopupMenu/icons/radio_checked = SubResource("ImageTexture_m12ei")
+PopupMenu/icons/radio_unchecked = SubResource("ImageTexture_4si4a")
+PopupMenu/styles/panel = SubResource("StyleBoxEmpty_odcj4")

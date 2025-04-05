@@ -1,0 +1,90 @@
+[gd_scene load_steps=19 format=3 uid="uid://bbv51m1os47x5"]
+
+[ext_resource type="Script" path="res://scripts/space.gd" id="1_d04rc"]
+[ext_resource type="Curve" uid="uid://l6s8wwobg6vc" path="res://paths/radial_velocity.tres" id="2_sw8px"]
+[ext_resource type="Curve" uid="uid://cvynkbwewq47v" path="res://paths/tangential_velocity.tres" id="3_2a3tt"]
+[ext_resource type="Curve" uid="uid://bn1kqqblutb7r" path="res://paths/psi.tres" id="4_64pmk"]
+[ext_resource type="Curve" uid="uid://qnvov8c8lab3" path="res://paths/mass.tres" id="5_52ihy"]
+[ext_resource type="Texture2D" uid="uid://blrlv25n13gsr" path="res://background/panorama_image (1).png" id="6_cgy6l"]
+[ext_resource type="Texture2D" uid="uid://drgeblq7hgv7b" path="res://moon/8K Moon_Diff_16K.png" id="7_jaotx"]
+[ext_resource type="Texture2D" uid="uid://cvf8sxco8c0f1" path="res://moon/8K Moon_Disp_8k.png" id="8_m5cly"]
+[ext_resource type="ArrayMesh" uid="uid://c8f4m7ug7cfg5" path="res://moon/8K Moon.obj" id="9_o7lbq"]
+[ext_resource type="PackedScene" uid="uid://dufci2i434a5d" path="res://ui_files/ui_overlay.tscn" id="10_0o2pe"]
+[ext_resource type="Curve3D" uid="uid://dflr1rk1u7r23" path="res://paths/radius_path.tres" id="11_0wupi"]
+[ext_resource type="PackedScene" uid="uid://bnf7rivwbaoyh" path="res://vikram.tscn" id="12_nckxv"]
+[ext_resource type="Script" path="res://scripts/Camera3D.gd" id="13_4ekc2"]
+
+[sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_8m6vp"]
+panorama = ExtResource("6_cgy6l")
+
+[sub_resource type="Sky" id="Sky_l18pm"]
+sky_material = SubResource("PanoramaSkyMaterial_8m6vp")
+
+[sub_resource type="Environment" id="Environment_gn6mn"]
+background_mode = 2
+sky = SubResource("Sky_l18pm")
+sky_custom_fov = 30.0
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wnblp"]
+albedo_color = Color(0.469297, 0.469297, 0.469297, 1)
+albedo_texture = ExtResource("7_jaotx")
+heightmap_scale = 0.0
+heightmap_texture = ExtResource("8_m5cly")
+
+[sub_resource type="Curve3D" id="Curve3D_1njar"]
+_data = {
+"points": PackedVector3Array(0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0),
+"tilts": PackedFloat32Array(0, 0)
+}
+point_count = 2
+
+[node name="Space" type="Node3D"]
+script = ExtResource("1_d04rc")
+radial_velocity = ExtResource("2_sw8px")
+tangential_velocity = ExtResource("3_2a3tt")
+pitch = ExtResource("4_64pmk")
+mass = ExtResource("5_52ihy")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_gn6mn")
+
+[node name="Moon" type="MeshInstance3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(-43452, 0.00656107, 0, -0.00656107, -43452, 0, 0, 0, 43452, -43417, 0, 0)
+material_override = SubResource("StandardMaterial3D_wnblp")
+mesh = ExtResource("9_o7lbq")
+metadata/_edit_lock_ = true
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.312236, -0.00492444, 0.949992, -0.950005, -0.0016185, 0.312231, 0, -0.999987, -0.0051836, -910.578, 2726.68, -2.98828)
+
+[node name="UiOverlay" parent="." instance=ExtResource("10_0o2pe")]
+
+[node name="Trajectory" type="Path3D" parent="."]
+curve = ExtResource("11_0wupi")
+
+[node name="PathFollow3D" type="PathFollow3D" parent="Trajectory"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7499.82, 0, 0)
+rotation_mode = 0
+loop = false
+
+[node name="Vikram" parent="Trajectory/PathFollow3D" instance=ExtResource("12_nckxv")]
+unique_name_in_owner = true
+
+[node name="camera_stage" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7500, 0, 0)
+
+[node name="camera_path" type="Path3D" parent="camera_stage"]
+curve = SubResource("Curve3D_1njar")
+
+[node name="PathFollow3D" type="PathFollow3D" parent="camera_stage/camera_path"]
+transform = Transform3D(-4.37114e-08, 1, -4.37114e-08, 0, -4.37114e-08, -1, -1, -4.37114e-08, 1.91069e-15, 0, 4.59851, 0)
+progress = 2.59808
+
+[node name="Camera3D" type="Camera3D" parent="camera_stage/camera_path/PathFollow3D"]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 0, 0)
+far = 50000.0
+script = ExtResource("13_4ekc2")
+minimal_offset = Vector3(0.75, 0.75, 0.75)
+maximal_offset = Vector3(2, 2, 2)
+zoom_speed = 10.0
