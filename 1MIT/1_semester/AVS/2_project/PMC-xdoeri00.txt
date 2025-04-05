@@ -1,0 +1,146 @@
+Architektury Výpočetních Systémů (AVS 2024)
+Projekt č. 2 (PMC)
+Login: xdoeri00
+
+Úloha 1: Paralelizace původního řešení
+===============================================================================
+1) Kterou ze smyček (viz zadání) je vhodnější paralelizovat a co způsobuje 
+   neefektivitu paralelizaci té druhé?
+
+Paralelizace menší smyčky je neefektivní, protože režie spojená s paralelizací (správa vláken, synchronizace) by byla větší než čas potřebný na zpracování samotného kódu. Naproti tomu u rozsáhlejší smyčky, konkrétně u funkce marchCubes, je tato režie relativně nižší a tudíž paralelizace přináší lepší poměr mezi časem stráveným na výpočtu a režii. Funkce marchCubes provádí výpočty pro velký počet kostek, což znamená, že paralelizace tohoto kroku výrazně zrychlí celkový proces, protože výpočet každé kostky je nezávislý a může být efektivně distribuován mezi vlákna.
+   
+2) Jak jste ve funkci LoopMeshBuilder::marchCubes zajistili správný výsledek 
+  (počet trojúhelníků) vrácený touto funkcí? Popište jaké řešení jste zvolili a proč.
+
+Pro správnost počtu trojúhelníků je použita kritická sekce při ukládání trojúhelníků, což zajišťuje, že tento úkol provádí pouze jedno vlákno najednou, čímž se eliminují problémy s paralelním zápisem. Počet trojúhelníků je pak bezpečně akumulován pomocí pragmatu reduction, které umožňuje paralelní výpočty bez vzniku souběhu (race condition).
+  
+3) Jaké plánování (rozdělení práce mezi vlákna) jste zvolili a proč? Popište, na
+   jakých datech (počet vláken, velikost problému) jste k závěrům došli.
+
+Bylo zvoleno dynamické plánování, protože délka jednotlivých iterací není konstantní. Pokud iterace probíhá nad kostkou, která není součástí modelu, výpočet této iterace se ukončí dříve. Takováto variabilita v délce iterací by činila statické plánování neefektivní, protože by docházelo k nerovnoměrnému rozdělení práce mezi vlákna. Dynamické plánování umožňuje lepší vyvážení zátěže tím, že vláknům jsou přiřazovány nové iterace na základě jejich aktuální dostupnosti. Parametr chunk určuje, kolik iterací je přiřazeno každému vláknu při jednom rozdělení práce. Menší hodnota parametru chunk vede k častějšímu přidělování nových iterací, což může zvýšit režii spojenou s plánováním, ale zároveň zajišťuje lepší rovnoměrnost v rozložení práce mezi vlákna.
+
+Při použití 18 vláken pro různé scénáře byly výsledky následující:
+
+Static plánování:
+bunny1: 1501–1503 ms
+bunny2: 356–358 ms
+bunny3: 71–72 ms
+bunny4: 31–43 ms
+dragon1: 26732 ms
+dragon2: 5244–5430 ms
+dragon3: 962–964 ms
+dragon4: 223–231 ms
+
+Guided plánování:
+bunny1: 1495–1499 ms
+bunny2: 345–346 ms
+bunny3: 67–69 ms
+bunny4: 29–32 ms
+dragon1: 24078 ms
+dragon2: 4752–5103 ms
+dragon3: 958 ms
+dragon4: 221–224 ms
+
+Dynamic plánování (chunk size 8, 16, 32, 64):
+bunny1:  chunk 8: 1496–1497 ms, chunk 16: 1496–1497 ms, chunk 32: 1496–1497 ms, chunk 64: 1498–1501 ms
+bunny2:  chunk 8: 346–347 ms,   chunk 16: 345–347 ms,   chunk 32: 345–348 ms,   chunk 64: 345–348 ms
+bunny3:  chunk 8: 67–68 ms,     chunk 16: 67–78 ms,     chunk 32: 67–69 ms,     chunk 64: 67–69 ms
+bunny4:  chunk 8: 27–34 ms,     chunk 16: 27–34 ms,     chunk 32: 27–37 ms,     chunk 64: 29–34 ms
+dragon1: chunk 8: 24032 ms,     chunk 16: 24043 ms,     chunk 32: 22172 ms,     chunk 64: 22303 ms
+dragon2: chunk 8: 4838–4942 ms, chunk 16: 4866–4898 ms, chunk 32: 4740–4836 ms, chunk 64: 4754–4856 ms
+dragon3: chunk 8: 958–961 ms,   chunk 16: 958–960 ms,   chunk 32: 959–962 ms,   chunk 64: 959–962 ms
+dragon4: chunk 8: 222 ms,       chunk 16: 221–231 ms,   chunk 32: 222 ms,       chunk 64: 222–225 ms
+
+Výsledky ukazují, že pro menší objekty (např. bunny) se čas příliš nemění při různé hodnotě chunk size, zatímco pro větší objekty (např. dragon) se dynamické plánování ukazuje jako výhodnější. Nižší hodnota parametru chunk způsobuje vyšší režii spojenou s plánováním, ale zároveň umožňuje lepší vyvážení zátěže mezi vlákny. Naopak větší chunk size snižuje režii plánování, ale může vést k méně rovnoměrnému rozdělení práce mezi vlákna, což může negativně ovlivnit efektivitu v určitých případech.
+
+
+Úloha 2: Paralelní průchod stromem
+===============================================================================
+1) Stručně popište použití OpenMP tasků ve vašem řešení. 
+
+Každá kostka je rozdělena na 8 menších podkostek, přičemž každá z nich má polovinu délky hrany původní kostky. Nejprve se ověří, zda podkostka prochází modelem, což určuje, zda je potřeba ji dále zanořit. Pokud ano, vytvoří se nový OpenMP task, který tuto podkostku zpracovává stejným způsobem jako její rodičovskou kostku (což znamená rekurzivní volání funkce marchCubesRecursive). Pokud podkostka neprochází modelem, nový úkol se nevyužije, protože ani její potomci nebudou model procházet. Tento postup je také omezen maximální hloubkou zanoření. Pragmu taskwait používáme k zajištění, že rodičovský úkol počká na dokončení všech podúkolů (potomků), což je klíčové pro správný výpočet celkového počtu vytvořených trojúhelníků.
+
+2) Jakou hodnotu cut-off jste zvolili? Jaké hodnoty "cut-off" jste zkoušeli, 
+   na jak velkých velikostech problému a jakých času jste dosáhli? 
+   Odůvodněte vaši volbu.
+
+Pro implementaci byla zvolena hodnota „cut-off“ na úroveň 1x1x1, což znamená, že jakmile velikost hrany kostky klesne pod tuto hranici, rekurze se zastaví a místo dalšího dělení se provádí přímé zpracování. Tato hodnota určuje maximální hloubku zanoření v rekurzivním procesu, přičemž každé zanoření zkracuje délku hrany kostky o polovinu, dokud nedosáhne této minimální velikosti. Tímto způsobem se ovlivňuje jak přesnost, tak i rychlost výpočtu.
+
+bun_zipper_res3 (18 vláken)
+32x32x32: 
+   cut-off = 1: 11 ms (9780 trojúhelníků)
+   cut-off = 2: 4  ms (1253 trojúhelníků)
+   cut-off = 4: 2 ms (158 trojúhelníků)
+64x64x64: 
+   cut-off = 1: 47 ms (40288 trojúhelníků)
+   cut-off = 2: 12 ms (5151 trojúhelníků)
+   cut-off = 4: 4 ms (696 trojúhelníků)
+128x128x128:
+   cut-off = 1: 302 ms (163220 trojúhelníků)
+   cut-off = 2: 48 ms (20414 trojúhelníků)
+   cut-off = 4: 11 ms (2646 trojúhelníků)
+
+Pro mřížku 32x32x32 byla zvolena hodnota „cut-off“ 1, což vedlo k času kolem 11 ms při generování 9780 trojúhelníků. Při vyšších hodnotách „cut-off“ (2 a 4) se doba výpočtu výrazně zkrátila, přičemž pro cut-off = 2 a 4 došlo k nižšímu počtu trojúhelníků, což ukazuje na nižší detailnost modelu. Pro větší mřížky, jako 64x64x64 a 128x128x128, se doba výpočtu zvýšila, přičemž i zde byla hodnota „cut-off“ 1 nejefektivnější, protože při vyšších hodnotách cut-off došlo k významnému poklesu počtu trojúhelníků, ale i zvýšení výpočetní doby kvůli režii při správě menších bloků. Optimální hodnoty „cut-off“ se tedy liší v závislosti na velikosti mřížky, přičemž pro menší mřížky je preferováno cut-off = 1 pro dosažení dobré rovnováhy mezi rychlostí a přesností.
+
+3) Jakým způsobem zajišťujete ukládání trojúhelníků z několika vláken současně 
+   v metodě LoopMeshBuilder::emitTriangle?
+
+Pro zajištění správného ukládání trojúhelníků z více vláken současně byla operace vložena do kritické sekce pomocí pragmy critical. Tímto způsobem je zajištěno, že vždy pouze jedno vlákno provádí operaci v daném okamžiku. Pro správné sečítání počtu trojúhelníků byl použitá pragmu atomic, která zajistí, že v jednom okamžiku nebude počet trojúhelníků přepisován více vlákny současně.
+
+
+Úloha 3: Grafy škálování všech řešení
+===============================================================================
+
+1) Stručně zhodnoťte efektivitu vytvořených řešení 
+   (na základě VŠECH odevzdaných grafů ŠKÁLOVÁNÍ).
+
+Při nižším počtu kostek v mřížce (<2^18) se doba potřebná pro dokončení algoritmu u obou přístupů neznačně liší. Jakmile se však počet kostek v mřížce zvýší nad hodnotu 2^18, stává se zřejmým, že stromová implementace je rychlejší a dosahuje kratšího času běhu. Tento rozdíl ukazuje, že implementace založená na stromu je výkonnější než ta, která využívá paralelní cykly.
+
+2) V jakém případě (v závislosti na počtu bodů ve vstupním souboru a velikosti 
+   mřížky) bude vaše řešení 1. úlohy neefektivní? 
+   (pokud takový případ existuje a je vidět ve vašem grafu)
+
+Pokud by byla použita velmi malá mřížka (například 32x32x32) a vstupní soubor by obsahoval velké množství bodů, algoritmus by se rozdělil na velmi málo iterací, každá z nich by však vyžadovala poměrně dlouhý čas na zpracování. Paralelizace v tomto případě nebude příliš efektivní, protože režie spojená s rozdělením práce mezi vlákna a synchronizací úkolů (tasks) může být větší než samotná doba potřebná na výpočty. Navíc díky malé velikosti mřížky by byl výstupní model příliš hrubý a zanedbal by detaily, což činí tuto volbu parametrů nevhodnou pro tento algoritmus.
+
+3) Je (nebo není) stromový algoritmus efektivnější z pohledu slabého škálování 
+   vzhledem ke vstupu?
+
+Z hlediska celkového času běhu je stromový algoritmus efektivnější než cyklický. Nicméně při pohledu na slabé škálování je cyklický algoritmus výhodnější, protože s rostoucí velikostí problému a počtem vláken se režie paralelizace u stromového algoritmu zvyšuje více než u cyklického algoritmu.
+
+4) Do souboru 3_4.txt napište svůj login, který používáte na Barboře, na druhý
+   řádek napište počet úloh (jobs), které jste spustili za dobu řešení projektu 2
+   a na třetí řádek uveďte, kolik času tyto úlohy běžely (formát HH:MM:SS). 
+   V souboru 3_4.txt využijte předpřipravené kostry - údaje přepište. Můžete využít
+   údajů ze Slurm plánovače, nepočítejte úlohy se suffixem (přepínač -X).
+
+
+Úloha 4: Analýza využití jader pomocí VTune
+================================================================================
+
+1) Jaké bylo průměrné využití jader pro všechny tři implementace s omezením na 
+   18 vláken? Hodnoty zapište do souboru 4_1.txt
+   (využijte předpřipravené kostry v souboru - čísla přepište).
+   
+   ref:
+   loop:
+   tree:
+
+2) Jaké bylo průměrné využití jader pro všechny tři implementace s využitím 
+   všech jader? Hodnoty zapište do souboru 4_2.txt (využijte předpřipravené 
+   kostry v souboru - čísla přepište).
+   
+   ref:
+   loop:
+   tree:
+
+3) Vypočítejte efektivitu vašeho řešení loop a tree vůči ref pro 18 a 36 vláken. 
+   Hodnoty naměřte ručně na výpočetním uzlu, ne přes VTune. Použijte následující parametry:
+   
+   ./PMC --builder {ref, tree, loop} -t {18, 36} --grid 128 ../data/bun_zipper_res3.pts 
+   
+   Hodnoty zapište do souboru 4_3.txt 
+   (využijte předpřipravené kostry v souboru - čísla přepište):
+   "loop (18)" vs. "ref"
+   "tree (18)" vs. "ref"
+   "loop (36)" vs. "ref"
+   "tree (36)" vs. "ref"
